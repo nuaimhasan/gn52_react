@@ -36,7 +36,7 @@ export default function Products() {
                       product?.img
                     }
                     alt="Product Image"
-                    className="w-full rounded border h-60 shadow-sm"
+                    className="w-full rounded border shadow-sm"
                   />
                 </PhotoView>
               </PhotoProvider>
