@@ -9,7 +9,7 @@ exports.addAdmin = async (req, res) => {
     const isExisted = await User.findOne({ username: username });
 
     if (isExisted) {
-      return res.status(400).json({
+      return res.json({
         success: false,
         message: "User already exist.",
       });
@@ -32,22 +32,49 @@ exports.addAdmin = async (req, res) => {
       data: result,
     });
   } catch (error) {
-    res.status(400).json({
+    res.json({
       success: false,
-      error: error.message,
+      message: error.message,
     });
   }
 };
+
+exports.defaultAdminCreate = async (req, res) => {
+  try {
+    const isExists = await User.findOne();
+
+    if (!isExists) {
+      const hashedPassword = await bcrypt.hash("12345678", 10);
+
+      const admin = new User({
+        name: "Default Admin",
+        username: "admin",
+        email: "admin@example.com",
+        password: hashedPassword,
+        role: "admin",
+      });
+
+      await admin.save();
+      console.log("Default admin user created successfully");
+    }
+  } catch (error) {
+    res.json({
+      success: false,
+      message: error.message,
+    });
+  }
+};
+
 exports.deleteAdmin = async (req, res) => {
   try {
     const { id } = req.params;
 
- const deletedUser = await User.findByIdAndDelete(id);
+    const deletedUser = await User.findByIdAndDelete(id);
 
     if (!deletedUser) {
-      return res.status(404).json({
+      return res.json({
         success: false,
-        error: "Administrator not found",
+        message: "Administrator not found",
       });
     }
 
@@ -59,7 +86,7 @@ exports.deleteAdmin = async (req, res) => {
   } catch (error) {
     res.status(500).json({
       success: false,
-      error: error.message,
+      message: error.message,
     });
   }
 };
@@ -72,9 +99,9 @@ exports.loginUser = async (req, res) => {
     const user = await User.findOne({ username: username });
 
     if (!user) {
-      return res.status(401).json({
+      return res.json({
         success: false,
-        error: "User not found",
+        message: "User not found",
       });
     }
 
@@ -82,14 +109,14 @@ exports.loginUser = async (req, res) => {
     const isMatch = await bcrypt.compare(password, user?.password);
 
     if (!isMatch) {
-      return res.status(404).json({
+      return res.json({
         success: false,
-        error: "Email or password is incorrect",
+        message: "Email or password is incorrect",
       });
     }
 
     // 5. generate token
-    let accessToken = createJsonWebToken({ username, password }, "6h");
+    let accessToken = createJsonWebToken({ username, password }, "24h");
 
     res.status(200).json({
       success: true,
@@ -98,9 +125,9 @@ exports.loginUser = async (req, res) => {
       data: user,
     });
   } catch (error) {
-    res.status(400).json({
+    res.json({
       success: false,
-      error: error.message,
+      message: error.message,
     });
   }
 };
@@ -115,15 +142,15 @@ exports.getLoggedUser = async (req, res) => {
         data: user,
       });
     } else {
-      res.status(404).json({
+      res.json({
         success: false,
-        error: "user not found",
+        message: "user not found",
       });
     }
   } catch (error) {
-    res.status(400).json({
+    res.json({
       success: false,
-      error: error.message,
+      message: error.message,
     });
   }
 };
@@ -133,9 +160,9 @@ exports.getUsers = async (req, res) => {
     const result = await User.find({});
 
     if (!result) {
-      return res.status(404).json({
+      return res.json({
         success: false,
-        error: "Administrators not found",
+        message: "Administrators not found",
       });
     }
 
@@ -147,7 +174,7 @@ exports.getUsers = async (req, res) => {
   } catch (error) {
     res.status(500).json({
       success: false,
-      error: error.message,
+      message: error.message,
     });
   }
 };

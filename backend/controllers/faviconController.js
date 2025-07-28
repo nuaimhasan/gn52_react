@@ -6,9 +6,9 @@ exports.getFavicon = async (req, res) => {
     const result = await Favicon.findOne({});
 
     if (!result) {
-      return res.status(404).json({
+      return res.json({
         success: false,
-        error: "Favicon not found",
+        message: "Favicon not found",
       });
     }
 
@@ -18,9 +18,9 @@ exports.getFavicon = async (req, res) => {
       data: result,
     });
   } catch (error) {
-    res.status(500).json({
+    res.json({
       success: false,
-      error: error.message,
+      message: error.message,
     });
   }
 };
@@ -39,7 +39,7 @@ exports.addFavicon = async (req, res) => {
         });
       }
 
-      return res.status(500).json({
+      return res.json({
         success: false,
         message: "Favicon already added",
       });
@@ -53,9 +53,9 @@ exports.addFavicon = async (req, res) => {
       data: result,
     });
   } catch (error) {
-    res.status(500).json({
+    res.json({
       success: false,
-      error: error?.message,
+      message: error?.message,
       message: "hello",
     });
 
@@ -73,9 +73,9 @@ exports.updateFavicon = async (req, res) => {
   const icon = req?.file?.filename;
   try {
     if (!icon) {
-      return res.status(400).json({
+      return res.json({
         success: false,
-        error: "Favicon is required",
+        message: "Favicon is required",
       });
     }
 
@@ -91,9 +91,9 @@ exports.updateFavicon = async (req, res) => {
         });
       }
 
-      return res.status(400).json({
+      return res.json({
         success: false,
-        error: "Favicon not found required",
+        message: "Favicon not found required",
       });
     }
 
@@ -114,9 +114,9 @@ exports.updateFavicon = async (req, res) => {
       });
     }
   } catch (error) {
-    res.status(500).json({
+    res.json({
       success: false,
-      error: error.message,
+      message: error.message,
     });
 
     if (icon) {

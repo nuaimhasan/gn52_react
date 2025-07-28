@@ -14,9 +14,10 @@ router.get("/all", getFavicon);
 router.post("/add", (req, res, next) => {
   uploadFavicon(req, res, (err) => {
     if (err) {
-      return res
-        .status(500)
-        .json({ message: "File upload failed", error: err });
+      return res.json({
+        message: `${err?.message}! max size 100kb`,
+        error: err,
+      });
     }
 
     addFavicon(req, res, next);
@@ -26,9 +27,10 @@ router.post("/add", (req, res, next) => {
 router.patch("/update/:id", (req, res, next) => {
   uploadFavicon(req, res, (err) => {
     if (err) {
-      return res
-        .status(500)
-        .json({ message: "File upload failed", error: err });
+      return res.json({
+        message: `${err?.message}! max size 100kb`,
+        error: err,
+      });
     }
 
     updateFavicon(req, res, next);

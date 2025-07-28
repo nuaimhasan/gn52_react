@@ -1,13 +1,12 @@
-import { useEffect, useState } from "react";
-
+import { useState } from "react";
 import { AiFillDelete } from "react-icons/ai";
 import ImageUploading from "react-images-uploading";
-import swal from "sweetalert2";
+import { toast } from "react-hot-toast";
 import {
   useAddLogoMutation,
   useGetLogosQuery,
   useUpdateLogoMutation,
-} from "../../../Redux/logo/logoApi";
+} from "../../../../Redux/logo/logoApi";
 
 export default function Logo() {
   const [images, setImages] = useState([]);
@@ -16,77 +15,33 @@ export default function Logo() {
   const logo = data?.data[0];
   const id = logo?._id;
 
-  const [
-    addLogo,
-    {
-      isLoading: addLoading,
-      isError: addIsError,
-      error: addError,
-      isSuccess: addSuccess,
-    },
-  ] = useAddLogoMutation();
+  const [addLogo, { isLoading: addLoading }] = useAddLogoMutation();
+  const [updateLogo, { isLoading: updateLoading }] = useUpdateLogoMutation();
 
-  const [
-    updateLogo,
-    {
-      isLoading: updateLoading,
-      isError: updateIsError,
-      error: updateError,
-      isSuccess: updateSuccess,
-    },
-  ] = useUpdateLogoMutation();
-
-  const handleAddBanner = async (e) => {
+  const handleAdd = async (e) => {
     e.preventDefault();
 
     const formData = new FormData();
     formData.append("logo", images[0]?.file);
 
     if (id) {
-      await updateLogo({ id, formData });
+      const res = await updateLogo({ id, formData });
+      if (res?.data?.success) {
+        toast.success(res?.data?.message || "Logo Update successfully");
+      } else {
+        toast.error(res?.data?.message || "Something went wrong");
+        console.log(res);
+      }
     } else {
-      await addLogo(formData);
+      const res = await addLogo(formData);
+      if (res?.data?.success) {
+        toast.success(res?.data?.message || "Logo added successfully");
+      } else {
+        toast.error(res?.data?.message || "Something went wrong");
+        console.log(res);
+      }
     }
   };
-
-  useEffect(() => {
-    if (addIsError) {
-      swal.fire(
-        "",
-        addError?.data?.error ? addError?.data?.error : "Something went wrong",
-        "error"
-      );
-      return;
-    }
-    if (updateIsError) {
-      swal.fire(
-        "",
-        updateError?.data?.error
-          ? updateError?.data?.error
-          : "Something went wrong",
-        "error"
-      );
-      return;
-    }
-
-    if (addSuccess) {
-      setImages([]);
-      swal.fire("", "Logo added successfully", "success");
-      return;
-    }
-    if (updateSuccess) {
-      setImages([]);
-      swal.fire("", "Logo updated successfully", "success");
-      return;
-    }
-  }, [
-    addIsError,
-    addError,
-    addSuccess,
-    updateIsError,
-    updateError,
-    updateSuccess,
-  ]);
 
   return (
     <section className="bg-base-100 shadow rounded">
@@ -94,7 +49,7 @@ export default function Logo() {
         <h3>Add Logo</h3>
       </div>
 
-      <form onSubmit={handleAddBanner} className="p-4">
+      <form onSubmit={handleAdd} className="p-4">
         <div className="md:w-1/2 w-full">
           <p className="mb-1">Logo</p>
           <div>

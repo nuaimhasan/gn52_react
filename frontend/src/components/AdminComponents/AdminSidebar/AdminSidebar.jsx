@@ -119,7 +119,7 @@ export default function AdminSidebar() {
               <div className="w-3/5 mx-auto h-10 bg-gray-100"></div>
             ) : (
               <img
-                className="w-3/5 mx-auto"
+                className="w-20 sm:w-28 mx-auto"
                 src={`${import.meta.env.VITE_BACKEND_URL}/logo/${logo?.logo}`}
                 alt="Logo"
               />

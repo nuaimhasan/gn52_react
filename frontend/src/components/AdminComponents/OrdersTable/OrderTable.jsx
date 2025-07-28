@@ -27,9 +27,7 @@ export default function OrderTable() {
   const [updateOrderStatus, { isLoading: statusLoading }] =
     useUpdateOrderStatusMutation();
 
-  if (isLoading) {
-    return <Spinner />;
-  }
+  if (isLoading) return <Spinner />;
 
   return (
     <div className="mt-4 bg-base-100 p-4 rounded shadow">
@@ -46,9 +44,9 @@ export default function OrderTable() {
         <table className="dashboard_table">
           <thead>
             <tr>
-              <th>Date</th>
+              <th>#</th>
               <th>User</th>
-              <th>Quantity</th>
+              <th>Products</th>
               <th>Total</th>
               <th>Status</th>
               <th>Action</th>
@@ -58,7 +56,10 @@ export default function OrderTable() {
             {orders?.length > 0 &&
               orders?.map((order) => (
                 <tr key={order?._id}>
-                  <td>{order?.createdAt.split("T")[0]}</td>
+                  <td>
+                    <p>INV-{order?.invoiceNumber}</p>
+                    <p>{order?.createdAt.split("T")[0]}</p>
+                  </td>
                   <td>
                     <p>Name: {order?.name}</p>
                     <div className="text-sm text-neutral-content">
@@ -66,7 +67,20 @@ export default function OrderTable() {
                       <p>city: {order?.city}</p>
                     </div>
                   </td>
-                  <td>{order?.quantity}</td>
+                  <td>
+                    <div className="flex -space-x-4 rtl:space-x-reverse">
+                      {order?.products?.map((product) => (
+                        <img
+                          key={product?._id}
+                          className="w-10 h-10 border border-white rounded-full dark:border-gray-800"
+                          src={`${import.meta.env.VITE_BACKEND_URL}/product/${
+                            product?.product?.img
+                          }`}
+                          alt="product"
+                        />
+                      ))}
+                    </div>
+                  </td>
                   <td>{order?.total}</td>
                   <td>
                     {statusLoading ? (

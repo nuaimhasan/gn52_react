@@ -2,54 +2,44 @@ const mongoose = require("mongoose");
 
 const orderSchema = new mongoose.Schema(
   {
-    orderid: {
+    invoiceNumber: {
       type: String,
+      required: true,
+      unique: true,
     },
     name: {
       type: String,
-      allowNull: false,
+      required: true,
     },
     phone: {
       type: String,
-      allowNull: false,
-    },
-    quantity: {
-      type: Number,
-      allowNull: false,
-    },
-    shipping: {
-      type: Number,
-      allowNull: false,
-    },
-    total: {
-      type: Number,
-      allowNull: false,
+      required: true,
     },
     city: {
       type: String,
-      allowNull: false,
+      required: true,
     },
     address: {
       type: String,
-      allowNull: false,
+      required: true,
     },
-    product: {
-      id: {
-        type: String,
-        allowNull: false,
+    products: [
+      {
+        product: {
+          type: mongoose.Schema.Types.ObjectId,
+          ref: "Product",
+          required: true,
+        },
+        quantity: { type: Number, required: true },
       },
-      title: {
-        type: String,
-        allowNull: false,
-      },
-      price: {
-        type: Number,
-        allowNull: false,
-      },
-      img: {
-        type: String,
-        allowNull: false,
-      },
+    ],
+    total: {
+      type: Number,
+      required: true,
+    },
+    shipping: {
+      type: Number,
+      required: true,
     },
     status: {
       type: String,

@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
+import JoditEditor from "jodit-react";
 import { useNavigate } from "react-router-dom";
 import { AiFillDelete } from "react-icons/ai";
 import ImageUploading from "react-images-uploading";
@@ -6,8 +7,10 @@ import Swal from "sweetalert2";
 import { useAddProductMutation } from "../../../Redux/product/productApi";
 
 export default function AddProduct() {
+  const editor = useRef(null);
   const navigate = useNavigate();
   const [image, setImage] = useState([]);
+  const [description, setDescription] = useState("");
 
   const [addProduct, { isLoading }] = useAddProductMutation();
 
@@ -16,20 +19,26 @@ export default function AddProduct() {
     e.preventDefault();
     const title = e.target.title.value;
     const price = e.target.price.value;
+    const discountPrice = e.target.discountPrice.value;
 
     if (image?.length <= 0) {
       return Swal.fire("", "Image is required", "warning");
     }
 
+    if (!title || !price || !description) {
+      return Swal.fire("", "All fields are required", "warning");
+    }
 
     const formData = new FormData();
     formData.append("title", title);
     formData.append("price", price);
+    formData.append("discountPrice", discountPrice);
     formData.append("img", image[0].file);
+    formData.append("description", description);
 
-    const res = await addProduct(formData).unwrap();
+    const res = await addProduct(formData);
 
-    if (res?.success) {
+    if (res?.data?.success) {
       Swal.fire("", "Product add success", "success");
       e.target.reset();
       setImage([]);
@@ -47,17 +56,8 @@ export default function AddProduct() {
       </div>
 
       <form className="p-4" onSubmit={handleAddProduct}>
-        <div className="text-neutral-content grid sm:grid-cols-2 md:grid-cols-3 gap-4 items-start">
+        <div className="text-neutral-content">
           <div className="flex flex-col gap-3">
-            <div>
-              <p className="mb-1">Title</p>
-              <input type="text" name="title" required />
-            </div>
-            <div>
-              <p className="mb-1">Price</p>
-              <input type="number" name="price" required />
-            </div>
-
             <div>
               <p className="mb-1">Image</p>
               <div>
@@ -103,6 +103,32 @@ export default function AddProduct() {
                   )}
                 </ImageUploading>
               </div>
+            </div>
+
+            <div>
+              <p className="mb-1">Title</p>
+              <input type="text" name="title" required />
+            </div>
+
+            <div className="grid sm:grid-cols-2 gap-4">
+              <div>
+                <p className="mb-1">Main Price</p>
+                <input type="number" name="price" required />
+              </div>
+
+              <div>
+                <p className="mb-1">Discount Price</p>
+                <input type="number" name="discountPrice" required />
+              </div>
+            </div>
+
+            <div>
+              <p className="mb-1">Description</p>
+              <JoditEditor
+                ref={editor}
+                value={description}
+                onBlur={(text) => setDescription(text)}
+              />
             </div>
           </div>
         </div>

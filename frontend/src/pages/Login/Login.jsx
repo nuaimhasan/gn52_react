@@ -1,8 +1,8 @@
 import { useEffect, useState } from "react";
 import { useLoginMutation } from "../../Redux/user/userApi";
-import Swal from "sweetalert2";
 import { useSelector } from "react-redux";
 import { useLocation, useNavigate } from "react-router-dom";
+import toast from "react-hot-toast";
 
 export default function Login() {
   const { loggedUser } = useSelector((store) => store.user);
@@ -13,12 +13,11 @@ export default function Login() {
   const location = useLocation();
   const from = location.state?.from?.pathname || "/admin/dashboard";
 
-  useEffect(()=>{
+  useEffect(() => {
     if (loggedUser?.success && !isError) {
       navigate(from, { replace: true });
     }
-  },[loggedUser, isError, from, navigate])
- 
+  }, [loggedUser, isError, from, navigate]);
 
   const handleLogin = async (e) => {
     e.preventDefault();
@@ -32,15 +31,11 @@ export default function Login() {
     };
 
     const res = await login(loginInfo);
-    
-
-    if (res?.error) {
-      return setError(res?.error?.data?.error);
-    }
-
     if (res?.data?.success) {
-      Swal.fire("", "Login Success", "success");
-      form.reset();
+      toast.success("Login Successful");
+    } else {
+      setError(res?.data?.message || "Something went wrong");
+      console.log(res);
     }
   };
 

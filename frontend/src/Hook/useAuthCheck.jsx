@@ -7,11 +7,11 @@ export default async function useAuthCheck() {
   const dispatch = useDispatch();
   const [authChecked, setAuthChecked] = useState(false);
 
-  const localAuth = localStorage?.getItem("gn52_jwt");
+  const localAuth = localStorage?.getItem("token");
   const { isExpired } = useJwt(localAuth);
 
   if (isExpired) {
-    localStorage.removeItem("gn52_jwt");
+    localStorage.removeItem("token");
   }
 
   useEffect(() => {

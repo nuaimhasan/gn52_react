@@ -1,64 +1,128 @@
 import { useEffect, useRef, useState } from "react";
-import { MdArrowDropUp, MdAddCall } from "react-icons/md";
+import { MdArrowDropUp, MdDelete } from "react-icons/md";
 import Swal from "sweetalert2";
 import { useCreateOrderMutation } from "../../Redux/order/orderApi";
-import { useGetBusinessQuery } from "../../Redux/businessInfo/businessInfo";
 import { useDispatch, useSelector } from "react-redux";
-import { setSelectedProduct } from "../../Redux/product/productSlice";
+import {
+  clearCart,
+  removeFromCart,
+  updateCartQuantity,
+} from "../../Redux/product/productSlice";
+import { useNavigate } from "react-router-dom";
+import { useGetBusinessQuery } from "../../Redux/businessInfo/businessInfo";
 import TagManager from "react-gtm-module";
 
 export default function Order() {
   const orderRef = useRef(null);
-  const { data } = useGetBusinessQuery();
-  const contactInfo = data?.data[0];
-
-  const product = useSelector((state) => state.product?.selectedProduct);
   const dispatch = useDispatch();
-
-  const [quantity, setQuantity] = useState(1);
+  const navigate = useNavigate();
   const [shipping, setShipping] = useState(80);
-  const [validPhone, setValidPhone] = useState("");
+  const carts = useSelector((state) => state.product.carts);
 
-  const total = product?.price * quantity + shipping;
+  const { data } = useGetBusinessQuery();
+  const shippingCharge = data?.data[0]?.shipping;
 
   useEffect(() => {
-    if (product) {
-      TagManager.dataLayer({
-        dataLayer: {
-          event: "checkout",
-          checkout: {
-            currency: "BDT",
-            items: [
-              {
-                item_id: product?._id,
-                item_name: product?.title,
-                price: product?.price,
-                quantity: quantity,
-              },
-            ],
-          },
-        },
-      });
+    if (shippingCharge) {
+      setShipping(shippingCharge?.insideDhaka);
     }
-  }, [product, quantity, total]);
+  }, [shippingCharge]);
 
   const [createOrder, { isLoading }] = useCreateOrderMutation();
 
+  const handleRemoveProduct = (productId) => {
+    const newCarts = carts?.filter((product) => product?.id !== productId);
+    dispatch(removeFromCart(newCarts));
+  };
+
+  // Update quantity
+  const handleQuantityChange = (id, action) => {
+    const updatedCart = carts.map((item) => {
+      if (item?.id === id) {
+        return {
+          ...item,
+          quantity:
+            action === "increment"
+              ? item?.quantity + 1
+              : Math.max(item?.quantity - 1, 1),
+        };
+      }
+      return item;
+    });
+
+    dispatch(updateCartQuantity(updatedCart));
+  };
+
+  // Calculate total price
+  const calculateTotal = () => {
+    return carts.reduce(
+      (total, product) => total + product?.quantity * product?.discountPrice,
+      0
+    );
+  };
+
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            if (carts?.length > 0) {
+              TagManager.dataLayer({
+                dataLayer: {
+                  event: "checkout",
+                  checkout: {
+                    customer: {
+                      name: "",
+                      phone: "",
+                    },
+                    ecommerce: {
+                      currency: "BDT",
+                      value: calculateTotal(),
+                      shipping,
+
+                      items: [
+                        carts?.map((product) => ({
+                          item_id: product?.id,
+                          item_name: product?.title,
+                          price: product?.price,
+                          discountPrice: product?.discountPrice,
+                          quantity: product?.quantity,
+                        })),
+                      ],
+                    },
+                  },
+                },
+              });
+            }
+          }
+        });
+      },
+      {
+        threshold: 0.5,
+      }
+    );
+
+    if (orderRef.current) {
+      observer.observe(orderRef.current);
+    }
+
+    return () => {
+      if (orderRef.current) {
+        observer.unobserve(orderRef.current);
+      }
+    };
+  }, [carts]);
+
   const handlePlaceOrder = async (e) => {
     e.preventDefault();
+
     const form = e.target;
     const name = form.name.value;
     const phone = form.number.value;
     const city = form.city.value;
     const address = form.address.value;
 
-    if (phone?.length !== 11) {
-      return setValidPhone("please provide valid phone number");
-    } else {
-      setValidPhone("");
-    }
-
-    if (!product) {
+    if (carts?.length === 0) {
       return Swal.fire("", "Please select a product", "warning");
     }
 
@@ -67,68 +131,47 @@ export default function Order() {
       phone,
       city,
       address,
-      quantity,
+      products: carts?.map((product) => {
+        return {
+          product: product?.id,
+          quantity: product?.quantity,
+        };
+      }),
       shipping,
-      total,
-      product: {
-        id: product?._id,
-        title: product?.title,
-        price: product?.price,
-        img: product?.img,
-      },
+      total: calculateTotal() + shipping,
     };
 
     const res = await createOrder(orderInfo);
 
-    if (res?.error) {
-      return Swal.fire(
-        "",
-        res?.error?.data?.message
-          ? res?.error?.data?.message
-          : "something went wrong",
+    if (res?.data?.success) {
+      form.reset();
+      Swal.fire(
+        "Order Placed!",
+        "Your order has been placed successfully.",
+        "success"
+      );
+
+      dispatch(clearCart());
+      navigate(`/order/success/${res?.data?.data?._id}`);
+    } else {
+      Swal.fire(
+        "Order Failed!",
+        "Something went wrong. Please try again.",
         "error"
       );
     }
-
-    if (res?.data?.success) {
-      Swal.fire("", "Order create success", "success");
-      form.reset();
-      setQuantity(1);
-      dispatch(setSelectedProduct(undefined));
-      TagManager.dataLayer({
-        dataLayer: {
-          event: "purchase",
-          purchase: {
-            transaction_id: res?.data?.data?._id,
-            value: total,
-            currency: "BDT",
-            items: [
-              {
-                item_id: product?.id,
-                item_name: product?.title,
-                price: product?.price,
-                quantity: quantity,
-              },
-            ],
-            user_name: name,
-            user_city: city,
-            user_state: address,
-            user_country: "Bangladesh",
-            user_phone_number: phone,
-          },
-        },
-      });
-    }
+    console.log(res);
   };
 
   return (
     <section ref={orderRef} className="py-5 sm:py-10" id="order">
       <div className="container">
-        <div className="border-2 border-primary rounded p-5 sm:p-10">
+        <div className="border-2 border-primary rounded p-5 sm:p-10 bg-secondary/10">
           <h2 className="sm:text-xl font-semibold text-center">
-            অর্ডার করতে আপনার সঠিক তথ্য দিয়ে নিচের ফর্মটি সম্পূর্ণ পূরন করুন।
-            <br /> (আগে থেকে কোন টাকা দেয়া লাগবে না। প্রোডাক্ট হাতে পাবার পর
-            টাকা দিবেন)
+            To order, please fill out the form below with your correct
+            information. <br />
+            (No advance payment is required. Payment will be made upon receipt
+            of the product)
           </h2>
 
           <form
@@ -141,153 +184,153 @@ export default function Order() {
               <div className="flex flex-col gap-3">
                 <div>
                   <small className="text-neutral-content">
-                    আপনার নাম লিখুন *
+                    Enter your name *
                   </small>
                   <input type="text" name="name" required />
                 </div>
 
                 <div>
                   <small className="text-neutral-content">
-                    আপনার মোবাইল নাম্বারটি লিখুন *
+                    Enter your mobile number *
                   </small>
-                  <input type="number" name="number" required />
-                  {validPhone && (
-                    <small className="text-red-500">{validPhone}</small>
-                  )}
+                  <input type="text" name="number" required />
                 </div>
 
                 <div>
                   <small className="text-neutral-content">
-                    আপনার শহরের নাম লিখুন *
+                    Enter your city *
                   </small>
                   <input type="text" name="city" required />
                 </div>
 
                 <div>
                   <small className="text-neutral-content">
-                    আপনার সম্পূর্ণ ঠিকানা লিখুন *
+                    Enter your full address *
                   </small>
                   <textarea name="address" rows="4" required></textarea>
                 </div>
               </div>
             </div>
 
-            {/*  */}
             <div>
               <h2 className="text-lg font-medium">Your Order</h2>
-
               <div>
-                <div className="flex justify-between items-center border-b py-2 border-dashed border-gray-400">
-                  {product ? (
-                    <>
-                      <div className="flex items-center gap-1">
-                        <img
-                          src={`${import.meta.env.VITE_BACKEND_URL}/product/${
-                            product?.img
-                          }`}
-                          alt=""
-                          className="w-11 h-11 p-1"
-                        />
+                {carts.map((product) => (
+                  <div
+                    key={product?.id}
+                    className="flex justify-between items-center border-b py-2 border-dashed border-gray-400"
+                  >
+                    <div className="w-full flex items-center justify-between gap-1">
+                      <div className="flex items-center gap-2">
                         <div>
-                          <p className="text-neutral text-[15px]">
-                            {product?.title}
-                          </p>
+                          <MdDelete
+                            onClick={() => handleRemoveProduct(product?.id)}
+                            className="text-red-500 cursor-pointer text-xl"
+                          />
+                        </div>
+
+                        <div className="flex items-center gap-2">
+                          <img
+                            src={
+                              import.meta.env.VITE_BACKEND_URL +
+                              "/product/" +
+                              product?.img
+                            }
+                            alt="product"
+                            className="w-11 h-11 rounded"
+                          />
+
+                          <div>
+                            <p className="text-neutral text-[15px]">
+                              {product?.title}
+                            </p>
+
+                            <div className="mt-1 flex items-center gap-2">
+                              <div
+                                onClick={() =>
+                                  handleQuantityChange(product?.id, "decrement")
+                                }
+                                className="px-1.5 border cursor-pointer border-neutral rounded"
+                              >
+                                -
+                              </div>
+                              <span>{product.quantity}</span>
+                              <div
+                                onClick={() =>
+                                  handleQuantityChange(product?.id, "increment")
+                                }
+                                className="px-1.5 border border-neutral rounded cursor-pointer"
+                              >
+                                +
+                              </div>
+                            </div>
+                          </div>
                         </div>
                       </div>
-                      <div>
-                        <p>{product?.price} টাকা</p>
-                      </div>
-                    </>
-                  ) : (
-                    <div className="font-semibold text-xl w-full text-center border bg-gray-200 rounded-lg py-4 mb-4">
-                      <a href="#products">Please select a Product</a>
-                    </div>
-                  )}
-                </div>
 
-                <div className="flex justify-between items-center border-b py-2.5 border-dashed border-gray-400">
-                  <p className="text-neutral-content">Quantity</p>
-                  <div className="flex items-center gap-2">
-                    <div className="flex items-center gap-2 text-sm text-neutral-content">
-                      <div
-                        onClick={() => {
-                          if (quantity > 1) {
-                            setQuantity(quantity - 1);
-                          }
-                        }}
-                        className="cursor-pointer bg-gray-100 px-1.5 rounded hover:bg-gray-200 duration-200"
-                      >
-                        -
-                      </div>
-                      <div>{quantity}</div>
-                      <div
-                        onClick={() => setQuantity(quantity + 1)}
-                        className="cursor-pointer bg-gray-100 px-1.5 rounded hover:bg-gray-200 duration-200"
-                      >
-                        +
-                      </div>
+                      <p>{product?.discountPrice} TK</p>
                     </div>
                   </div>
-                </div>
-
+                ))}
                 <div className="flex justify-between items-center border-b py-2.5 border-dashed border-gray-400">
                   <p className="text-neutral-content">Subtotal</p>
                   <p className="text-primary flex items-center gap-px">
-                    {product ? quantity * product?.price : "00"} টাকা
+                    {calculateTotal()} TK
                   </p>
                 </div>
-
-                <div className="flex justify-between items-center border-b py-2.5 border-dashed border-gray-400">
+                <div className="flex justify-between items-center border-b py-2.5 border-dashed border-gray-400 ">
                   <p className="text-neutral-content">Shipping</p>
-
-                  <div>
-                    <div className="flex items-center text-neutral">
+                  <div className="text-neutral">
+                    <div className="flex items-center">
                       <input
                         id="insideDhaka"
                         type="radio"
-                        value="80"
+                        value={shippingCharge?.insideDhaka}
                         name="shipping"
-                        className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 focus:ring-blue-500 dark:focus:ring-blue-600 "
-                        onClick={() => setShipping(80)}
-                        defaultChecked={shipping == 80 && "checked"}
+                        className="w-4 h-4"
+                        onClick={() => setShipping(shippingCharge?.insideDhaka)}
+                        checked={shipping === shippingCharge?.insideDhaka}
                       />
                       <label
                         htmlFor="insideDhaka"
                         className="ms-2 text-sm font-medium"
                       >
-                        ঢাকার ভিতরে: ৮০ টাকা
+                        Inside Dhaka: {shippingCharge?.insideDhaka} TK
                       </label>
                     </div>
                     <div className="flex items-center">
                       <input
                         id="outsideDhaka"
                         type="radio"
-                        value="140"
+                        value={shippingCharge?.outsideDhaka}
                         name="shipping"
-                        className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 focus:ring-blue-500 dark:focus:ring-blue-600"
-                        onClick={() => setShipping(140)}
-                        defaultChecked={shipping == 140 && "checked"}
+                        className="w-4 h-4"
+                        onClick={() =>
+                          setShipping(shippingCharge?.outsideDhaka)
+                        }
+                        checked={shipping === shippingCharge?.outsideDhaka}
                       />
                       <label
                         htmlFor="outsideDhaka"
                         className="ms-2 text-sm font-medium"
                       >
-                        ঢাকার বাহিরে: ১৪০ টাকা
+                        Outside Dhaka: {shippingCharge?.outsideDhaka} TK
                       </label>
                     </div>
                   </div>
                 </div>
-
                 <div className="flex justify-between items-center mt-2 font-medium text-lg">
                   <p className="text-neutral-content">Total</p>
-                  <p className="text-primary">{product ? total : "00"} টাকা</p>
+                  <p className="text-primary">
+                    {calculateTotal() + shipping} TK
+                  </p>
                 </div>
 
                 <div className="mt-4 bg-gray-100 p-4 rounded text-neutral-content">
-                  <h2>ক্যাশ অন ডেলিভারি</h2>
+                  <h2>Cash on delivery</h2>
                   <div className="relative bg-gray-200 p-3 rounded mt-3">
                     <p className="text-sm">
-                      পণ্য হাতে পেয়ে ডেলিভারি ম্যানকে পেমেন্ট করতে পারবেন।
+                      You can pay the delivery man after receiving the product.
                     </p>
 
                     <div className="absolute -top-8 left-6">
@@ -300,20 +343,12 @@ export default function Order() {
                   <button className="text-center w-full bg-primary text-base-100 rounded py-2.5 font-semibold">
                     {isLoading
                       ? "Loading..."
-                      : `অর্ডার কনফার্ম করুন - ${product ? total : "00"} টাকা`}
+                      : `Confirm order - ${calculateTotal() + shipping} TK`}
                   </button>
                 </div>
               </div>
             </div>
           </form>
-        </div>
-
-        <div className="mt-2 sm:mt-10 sm:text-xl font-semibold flex flex-col justify-center items-center text-center">
-          <p>অর্ডার করতে অথবা বিস্তারিত জানতে সরাসরি কল করুনঃ</p>
-          <span className="flex text-primary items-center gap-1 text-lg sm:text-2xl">
-            <MdAddCall />
-            <span className="whitespace-nowrap">{contactInfo?.phone}</span>
-          </span>
         </div>
       </div>
     </section>

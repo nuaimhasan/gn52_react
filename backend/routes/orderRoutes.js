@@ -11,7 +11,7 @@ const {
 
 router.post("/create-order", addOrder);
 router.get("/all-orders", getAllOrders);
-router.get("/single/:id", verifyToken, getSingleOrder);
+router.get("/single/:id", getSingleOrder);
 router.delete("/delete/:id", verifyToken, deleteOrder);
 router.put("/update/status/:id", verifyToken, updateOrderStatus);
 

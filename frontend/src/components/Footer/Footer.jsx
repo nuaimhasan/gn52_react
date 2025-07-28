@@ -4,23 +4,23 @@ import { FaWhatsapp } from "react-icons/fa";
 import { useGetBusinessQuery } from "../../Redux/businessInfo/businessInfo";
 
 export default function Footer() {
+  const { data } = useGetBusinessQuery();
 
-  const {data} = useGetBusinessQuery()
-
-  const contactInfo= data?.data[0]  
+  const contactInfo = data?.data[0];
 
   return (
-    <footer className="border-t py-5 bg-primary">
+    <footer className="border-t py-2 bg-primary">
       <div className="container">
         <div className="flex justify-between items-center">
           <p className="text-xs sm:text-sm text-white font-light">
-            Copyright © 2024 {contactInfo?.companyName}. All rights reserved. Powered by{" "}
+            Copyright © 2024 {contactInfo?.companyName}. All rights reserved.
+            Developed by{" "}
             <Link
               to="https://emanagerit.com"
               target="_blank"
               className="underline"
             >
-              eManager IT
+              eManager
             </Link>
           </p>
 

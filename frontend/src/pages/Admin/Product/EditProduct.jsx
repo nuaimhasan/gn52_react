@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import JoditEditor from "jodit-react";
 import { useNavigate, useParams } from "react-router-dom";
 import { AiFillDelete } from "react-icons/ai";
 import ImageUploading from "react-images-uploading";
@@ -9,31 +10,40 @@ import {
 } from "../../../Redux/product/productApi";
 
 export default function EditProduct() {
+  const editor = useRef(null);
   const navigate = useNavigate();
   const [image, setImage] = useState([]);
+  const [description, setDescription] = useState("");
 
   const { id } = useParams();
-  const { data } = useGetProductByIdQuery({id});
+  const { data } = useGetProductByIdQuery({ id });
   const product = data?.data;
+
+  useEffect(() => {
+    if (product) {
+      setDescription(product.description);
+    }
+  }, [product]);
 
   const [updateProduct, { isLoading }] = useUpdateProductMutation();
 
-  //------------Handle Add Product
-  const handleAddProduct = async (e) => {
+  //------------Handle Edit Product
+  const handleEdit = async (e) => {
     e.preventDefault();
     const title = e.target.title.value;
     const price = e.target.price.value;
+    const discountPrice = e.target.discountPrice.value;
 
     const formData = new FormData();
     formData.append("title", title);
     formData.append("price", price);
-    if (image?.length > 0) {
-      formData.append("img", image[0].file);
-    }
+    formData.append("discountPrice", discountPrice);
+    formData.append("description", description);
+    if (image?.length > 0) formData.append("img", image[0].file);
 
-    const res = await updateProduct({ id, formData }).unwrap();
+    const res = await updateProduct({ id, formData });
 
-    if (res?.success) {
+    if (res?.data?.success) {
       Swal.fire("", "Product add success", "success");
       e.target.reset();
       setImage([]);
@@ -50,32 +60,8 @@ export default function EditProduct() {
         <h3>Edit Product</h3>
       </div>
 
-      <form className="p-4" onSubmit={handleAddProduct}>
+      <form className="p-4" onSubmit={handleEdit}>
         <div className="text-neutral-content flex flex-col gap-4">
-          <div className="grid sm:grid-cols-2 md:grid-cols-3 gap-3 items-center">
-            {/* title */}
-            <div>
-              <p className="mb-1">Title</p>
-              <input
-                type="text"
-                name="title"
-                required
-                defaultValue={product?.title}
-              />
-            </div>
-            {/* price */}
-            <div>
-              <p className="mb-1">Price</p>
-              <input
-                type="number"
-                name="price"
-                required
-                defaultValue={product?.price}
-              />
-            </div>
-          </div>
-
-          {/* image */}
           <div className="grid sm:grid-cols-2 gap-3 border rounded border-dashed p-4">
             <div>
               <p className="mb-1">Image</p>
@@ -127,11 +113,52 @@ export default function EditProduct() {
                   src={`${import.meta.env.VITE_BACKEND_URL}/product/${
                     product?.img
                   }`}
-                  alt=""
+                  alt="product"
                   className="w-28 mx-auto"
                 />
               </div>
             )}
+          </div>
+
+          <div>
+            <p className="mb-1">Title</p>
+            <input
+              type="text"
+              name="title"
+              required
+              defaultValue={product?.title}
+            />
+          </div>
+
+          <div className="grid sm:grid-cols-2 gap-4">
+            <div>
+              <p className="mb-1">Price</p>
+              <input
+                type="number"
+                name="price"
+                required
+                defaultValue={product?.price}
+              />
+            </div>
+
+            <div>
+              <p className="mb-1">Discount Price</p>
+              <input
+                type="number"
+                name="discountPrice"
+                required
+                defaultValue={product?.discountPrice}
+              />
+            </div>
+          </div>
+
+          <div>
+            <p className="mb-1">Description</p>
+            <JoditEditor
+              ref={editor}
+              value={description}
+              onBlur={(text) => setDescription(text)}
+            />
           </div>
         </div>
 

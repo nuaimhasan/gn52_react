@@ -2,6 +2,7 @@ import { useParams } from "react-router-dom";
 import { useGetOrderByIdQuery } from "../../../Redux/order/orderApi";
 import Spinner from "../../Spinner/Spinner";
 import { useGetLogosQuery } from "../../../Redux/logo/logoApi";
+import { useGetBusinessQuery } from "../../../Redux/businessInfo/businessInfo";
 
 export default function Order() {
   const { id } = useParams();
@@ -10,16 +11,20 @@ export default function Order() {
   const { data: logoInfo } = useGetLogosQuery();
   const logo = logoInfo?.data[0];
 
-  if (isLoading) {
-    return <Spinner />;
-  }
+  const { data: contactInfo } = useGetBusinessQuery();
+  const contact = contactInfo?.data[0];
+
+  if (isLoading) return <Spinner />;
 
   const order = data?.data;
-  const { createdAt, quantity, shipping, name, phone, email, city, address } =
+  const { createdAt, shipping, name, phone, city, address, products, total } =
     order;
 
   const date = createdAt.split("T")[0];
-  const price = order?.product?.price;
+  const subTotal = products?.reduce(
+    (acc, item) => acc + item?.product?.discountPrice * item?.quantity,
+    0
+  );
 
   return (
     <div>
@@ -27,11 +32,11 @@ export default function Order() {
         <div className="text-neutral-content text-sm">
           <img
             src={`${import.meta.env.VITE_BACKEND_URL}/logo/${logo?.logo}`}
-            alt=""
+            alt="logo"
             className="w-36"
           />
-          <p>01977-779279</p>
-          <p>Zigatola, Dhaka, Bangladesh</p>
+          <p>{contact?.phone}</p>
+          <p>{contact?.address}</p>
         </div>
 
         <div>
@@ -42,46 +47,76 @@ export default function Order() {
         <div className="text-[15px]">
           <h2>{name}</h2>
           <p>{phone}</p>
-          <p>{email}</p>
           <p>
             {address}, {city}
           </p>
         </div>
       </div>
-      <div className="mt-4 pt-4 border-t border-neutral-content">
-        <div className="grid grid-cols-5">
-          <div className="col-span-3">
-            <p className="text-[15px]">{order?.product?.title}</p>
-          </div>
 
-          <p>{quantity}</p>
+      <div className="relative mt-2 overflow-x-auto">
+        <table>
+          <thead>
+            <tr>
+              <th>SL</th>
+              <th>Product</th>
+              <th>Quantity</th>
+              <th>Price</th>
+              <th>Discount Price</th>
+              <th>Total</th>
+            </tr>
+          </thead>
+          <tbody>
+            {products?.map((product, i) => (
+              <tr key={product?._id}>
+                <td>{i + 1}</td>
+                <td>
+                  <div className="flex items-center gap-2">
+                    <img
+                      src={`${import.meta.env.VITE_BACKEND_URL}/product/${
+                        product?.product?.img
+                      }`}
+                      alt={product?.product?.title}
+                      className="h-9 w-9 rounded-full"
+                      loading="lazy"
+                    />
 
-          <p className="text-end">{quantity * price}</p>
-        </div>
+                    <p>{product?.product?.title}</p>
+                  </div>
+                </td>
+                <td>{product?.quantity}</td>
+                <td>
+                  <del className="text-red-500">{product?.product?.price}৳</del>
+                </td>
+                <td>{product?.product?.discountPrice}৳</td>
+                <td>{product?.product?.discountPrice * product?.quantity}৳</td>
+              </tr>
+            ))}
+          </tbody>
+          <tfoot>
+            <tr>
+              <th colSpan={5} className="text-end">
+                SubTotal
+              </th>
+              <th>{subTotal}৳</th>
+            </tr>
+
+            <tr>
+              <td colSpan={5} className="text-end">
+                Shipping Charge
+              </td>
+              <td>{shipping}৳</td>
+            </tr>
+
+            <tr>
+              <th colSpan={5} className="text-end">
+                Total
+              </th>
+              <th>{total}৳</th>
+            </tr>
+          </tfoot>
+        </table>
       </div>
-      <div className="mt-4 pt-4 border-t border-neutral-content">
-        <div className="grid grid-cols-3 sm:grid-cols-5">
-          <div className="sm:col-span-3"></div>
 
-          <p>Total</p>
-
-          <p className="text-end">{quantity * price}</p>
-        </div>
-        <div className="grid grid-cols-3 sm:grid-cols-5">
-          <div className="sm:col-span-3"></div>
-
-          <p>Shipping</p>
-
-          <p className="text-end">{shipping}</p>
-        </div>
-        <div className="grid grid-cols-3 sm:grid-cols-5 font-medium text-lg">
-          <div className="sm:col-span-3"></div>
-
-          <p>SubTotal</p>
-
-          <p className="text-end text-primary">{quantity * price + shipping}</p>
-        </div>
-      </div>
       <div className="mt-40">
         <p className="text-neutral-content text-xs text-center">
           Thank you for your order

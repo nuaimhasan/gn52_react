@@ -2,12 +2,12 @@ const mongoose = require("mongoose");
 
 const bannerSchema = new mongoose.Schema(
   {
-    videoLink: {
+    title: {
       type: String,
       required: true,
     },
-    title: {
-      type: String,
+    galleries: {
+      type: Array,
       required: true,
     },
     description: {

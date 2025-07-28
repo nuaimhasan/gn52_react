@@ -14,7 +14,7 @@ export const userApi = apiSlice.injectEndpoints({
         try {
           const result = await queryFulfilled;
 
-          localStorage.setItem("gn52_jwt", result?.data?.token);
+          localStorage.setItem("token", result?.data?.token);
 
           dispatch(
             userLoggedIn({

@@ -4,6 +4,7 @@ import Home from "../pages/Home/Home";
 import React, { Suspense } from "react";
 import Spinner from "../components/Spinner/Spinner";
 import OrderSuccess from "../pages/OrderSuccess/OrderSuccess";
+import OrderDetails from "../pages/Admin/Orders/OrderDetails";
 
 // Lazy-loaded components
 const AdminLayout = React.lazy(() => import("../Layout/AdminLayout"));
@@ -20,9 +21,7 @@ const AddAdministrator = React.lazy(() =>
   import("../pages/Admin/Administrator/AddAdministrator")
 );
 const Orders = React.lazy(() => import("../pages/Admin/Orders/Orders"));
-const OrderDetails = React.lazy(() =>
-  import("../pages/Admin/OrderDetails/OrderDetails")
-);
+
 const OrderPrint = React.lazy(() =>
   import("../pages/Admin/OrderPrint/OrderPrint")
 );
@@ -48,8 +47,10 @@ const AddFaq = React.lazy(() => import("../pages/Admin/Faq/addFaq"));
 const FaqList = React.lazy(() => import("../pages/Admin/Faq/faqList"));
 const EditFaq = React.lazy(() => import("../pages/Admin/Faq/updateFaq"));
 const Banner = React.lazy(() => import("../pages/Admin/Banner/Banner"));
-const Logo = React.lazy(() => import("../pages/Admin/Logo/Logo"));
-const SEO = React.lazy(() => import("../pages/Admin/SEO/SEO"));
+const Logo = React.lazy(() =>
+  import("../pages/Admin/FrontEndSetting/Logo/Logo")
+);
+
 const Favicon = React.lazy(() =>
   import("../pages/Admin/FrontEndSetting/Favicon/Favicon")
 );
@@ -62,6 +63,8 @@ const FeatureSection = React.lazy(() =>
 const FaqSection = React.lazy(() =>
   import("../pages/Admin/FaqSection/FaqSection")
 );
+
+const SEO = React.lazy(() => import("../pages/Admin/SEO/SEO"));
 
 export const routes = createBrowserRouter([
   {
@@ -201,9 +204,4 @@ export const routes = createBrowserRouter([
       </Suspense>
     ),
   },
-
-  // {
-  //   path: "/admin/eManager/add",
-  //   element: <AddAdmin />,
-  // },
 ]);

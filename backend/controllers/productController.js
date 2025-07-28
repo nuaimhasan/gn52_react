@@ -4,11 +4,10 @@ const fs = require("fs");
 exports.addProduct = async (req, res) => {
   const img = req.file ? req.file.filename : null;
   try {
-    const { title, price } = req.body;
+    const data = req.body;
 
     const newProduct = new Product({
-      title,
-      price,
+      ...data,
       img,
     });
 
@@ -51,48 +50,51 @@ exports.getProduct = async (req, res) => {
 
 exports.updateProduct = async (req, res) => {
   const img = req.file ? req.file.filename : null;
+  const id = req.params.id;
 
   try {
-    const productId = req.params.id;
-    const { title, price } = req.body;
-
-    const product = await Product.findById(productId);
+    const product = await Product.findById(id);
 
     if (!product) {
-      return res.status(404).json({
+      return res.json({
         success: false,
         message: "Product not found",
       });
     }
 
-    if (img) {
-      if (product.img) {
-        fs.unlinkSync(`uploads/product/${product.img}`);
-      }
-      product.img = img;
-    }
+    const newData = {
+      ...req.body,
+      img: img || product?.img,
+    };
 
-    product.title = title || product.title;
-    product.price = price || product.price;
-
-    const updatedProduct = await product.save();
+    const result = await Product.findByIdAndUpdate(id, newData, { new: true });
 
     res.status(200).json({
       success: true,
       message: "Product updated successfully",
-      data: updatedProduct,
-    });
-  } catch (error) {
-    res.status(500).json({
-      success: false,
-      error: error.message,
+      data: result,
     });
 
-    fs.unlink(`./uploads/product/${img}`, (err) => {
-      if (err) {
-        console.error(err);
-      }
+    if (img && result) {
+      fs.unlink(`./uploads/product/${product?.img}`, (err) => {
+        if (err) {
+          console.error(err);
+        }
+      });
+    }
+  } catch (error) {
+    res.json({
+      success: false,
+      message: error.message,
     });
+
+    if (img) {
+      fs.unlink(`./uploads/product/${img}`, (err) => {
+        if (err) {
+          console.error(err);
+        }
+      });
+    }
   }
 };
 

@@ -5,7 +5,7 @@ import {
   useUpdateBusinessMutation,
 } from "../../../Redux/businessInfo/businessInfo";
 
-export default function businessInfo() {
+export default function BusinessInfo() {
   const { data } = useGetBusinessQuery();
   const businessInfo = data?.data[0];
   const id = businessInfo?._id;
@@ -23,6 +23,9 @@ export default function businessInfo() {
     const email = e.target.email.value;
     const facebook = e.target.facebook.value;
     const whatsapp = e.target.whatsapp.value;
+    const address = e.target.address.value;
+    const insideDhaka = e.target.insideDhaka.value;
+    const outsideDhaka = e.target.outsideDhaka.value;
 
     const info = {
       companyName,
@@ -30,6 +33,11 @@ export default function businessInfo() {
       email,
       facebook,
       whatsapp,
+      address,
+      shipping: {
+        insideDhaka,
+        outsideDhaka,
+      },
     };
 
     if (id) {
@@ -38,6 +46,7 @@ export default function businessInfo() {
         swal.fire("", "Business Info update Success", "success");
       } else {
         swal.fire("", "something went wrong!", "error");
+        console.log(res);
       }
     } else {
       const res = await addBusinessInfo(info);
@@ -45,17 +54,19 @@ export default function businessInfo() {
         swal.fire("", "Business Info Add Success", "success");
       } else {
         swal.fire("", "something went wrong!", "error");
+        console.log(res);
       }
     }
   };
+
   return (
     <section className="bg-base-100 rounded shadow">
       <div className="p-4 border-b">
         <h3 className="font-medium text-neutral">Business Info</h3>
       </div>
 
-      <form className="p-4" onSubmit={hanldeAddUpdate}>
-        <div className="text-neutral-content grid sm:grid-cols-2 md:grid-cols-3 gap-4 items-start">
+      <form className="p-4 text-neutral-content" onSubmit={hanldeAddUpdate}>
+        <div className="grid sm:grid-cols-2 md:grid-cols-3 gap-4 items-start">
           <div>
             <p className="mb-1">Company Name</p>
             <input
@@ -99,6 +110,39 @@ export default function businessInfo() {
               required
               defaultValue={businessInfo?.whatsapp}
             />
+          </div>
+
+          <div>
+            <p className="mb-1">Address</p>
+            <input
+              type="text"
+              name="address"
+              required
+              defaultValue={businessInfo?.address}
+            />
+          </div>
+        </div>
+
+        <div className="mt-4 border rounded p-3">
+          <h3>Shipping Config</h3>
+
+          <div className="mt-3 grid sm:grid-cols-2 gap-4">
+            <div>
+              <p className="mb-1">Inside Dhaka</p>
+              <input
+                type="number"
+                name="insideDhaka"
+                defaultValue={businessInfo?.shipping?.insideDhaka}
+              />
+            </div>
+            <div>
+              <p className="mb-1">Outside Dhaka</p>
+              <input
+                type="number"
+                name="outsideDhaka"
+                defaultValue={businessInfo?.shipping?.outsideDhaka}
+              />
+            </div>
           </div>
         </div>
 

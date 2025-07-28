@@ -1,7 +1,7 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { AiFillDelete } from "react-icons/ai";
 import ImageUploading from "react-images-uploading";
-import swal from "sweetalert2";
+import { toast } from "react-hot-toast";
 
 import {
   useAddMutation,
@@ -17,27 +17,10 @@ export default function Favicon() {
   const favicon = data?.data;
   const id = favicon?._id;
 
-  const [
-    add,
-    {
-      isLoading: addLoading,
-      isError: addIsError,
-      error: addError,
-      isSuccess: addSuccess,
-    },
-  ] = useAddMutation();
+  const [add, { isLoading: addLoading }] = useAddMutation();
+  const [update, { isLoading: updateLoading }] = useUpdateMutation();
 
-  const [
-    update,
-    {
-      isLoading: updateLoading,
-      isError: updateIsError,
-      error: updateError,
-      isSuccess: updateSuccess,
-    },
-  ] = useUpdateMutation();
-
-  const handleAddBanner = async (e) => {
+  const handleFavicon = async (e) => {
     e.preventDefault();
 
     const formData = new FormData();
@@ -45,51 +28,22 @@ export default function Favicon() {
 
     if (id) {
       let res = await update({ id, formData });
-      console.log(res);
+      if (res?.data?.success) {
+        toast.success(res?.data?.message || "Favicon added successfully");
+      } else {
+        toast.error(res?.data?.message || "Something went wrong");
+        console.log(res);
+      }
     } else {
       const res = await add(formData);
-      console.log(res);
+      if (res?.data?.success) {
+        toast.success(res?.data?.message || "Favicon added successfully");
+      } else {
+        toast.error(res?.data?.message || "Something went wrong");
+        console.log(res);
+      }
     }
   };
-
-  useEffect(() => {
-    if (addIsError) {
-      swal.fire(
-        "",
-        addError?.data?.error ? addError?.data?.error : "Something went wrong",
-        "error"
-      );
-      return;
-    }
-    if (updateIsError) {
-      swal.fire(
-        "",
-        updateError?.data?.error
-          ? updateError?.data?.error
-          : "Something went wrong",
-        "error"
-      );
-      return;
-    }
-
-    if (addSuccess) {
-      setImages([]);
-      swal.fire("", "Favicon added successfully", "success");
-      return;
-    }
-    if (updateSuccess) {
-      setImages([]);
-      swal.fire("", "Favicon updated successfully", "success");
-      return;
-    }
-  }, [
-    addIsError,
-    addError,
-    addSuccess,
-    updateIsError,
-    updateError,
-    updateSuccess,
-  ]);
 
   return (
     <section className="bg-base-100 shadow rounded">
@@ -97,7 +51,7 @@ export default function Favicon() {
         <h3>Add Favicon</h3>
       </div>
 
-      <form onSubmit={handleAddBanner} className="p-4">
+      <form onSubmit={handleFavicon} className="p-4">
         <div className="md:w-1/2 w-full">
           <p className="mb-1">Icon</p>
           <div>

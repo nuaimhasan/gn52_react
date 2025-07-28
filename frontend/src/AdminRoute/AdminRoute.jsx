@@ -6,7 +6,7 @@ export default function AdminRoute({ children }) {
   const { loggedUser } = useSelector((state) => state.user);
 
   const location = useLocation();
-  const token = localStorage.getItem("gn52_jwt");
+  const token = localStorage.getItem("token");
 
   if (!token && loggedUser?.data?.role !== "admin") {
     return <Navigate to="/admin/login" state={{ from: location }} replace />;
